@@ -136,6 +136,23 @@
         <div id="status" class="status" style="display: none;"></div>
     </div>
     
+<div class="section">
+        <h3>Voice and Speed Settings</h3>
+        
+        <label for="voiceSelect">Voice:</label>
+        <select id="voiceSelect">
+            <option value="en-US-Chirp3-HD-Charon">Charon (Male)</option>
+            <option value="en-US-Chirp3-HD-Kore">Kore (Female)</option>
+            <option value="en-US-Chirp3-HD-Leda">Leda (Female)</option>
+            <option value="en-US-Chirp3-HD-Puck">Puck (Male)</option>
+        </select>
+        
+        <label for="speedSlider">Speech Speed:</label>
+        <input type="range" id="speedSlider" min="0.25" max="2.0" step="0.05" value="1.0">
+        <span id="speedValue">1.0x</span>
+        
+        <button id="saveSettingsButton">Save Settings</button>
+    </div>
     <div class="test-section">
         <h3>Test Chirp 3 HD Voice</h3>
         <input type="text" id="testText" placeholder="Enter text to test" value="Hello there! I'm Charon, your ultra-realistic Chirp 3 HD voice assistant.">

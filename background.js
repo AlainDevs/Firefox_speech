@@ -31,15 +31,27 @@ try {
 
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     if (request.action === 'readText') {
-        handleTextToSpeech(request.text)
+        // Pass voice and speakingRate from the popup to the background script
+        handleTextToSpeech(request.text, request.voice, request.speakingRate)
             .then(result => sendResponse(result))
             .catch(error => sendResponse({error: error.message}));
         return true; // Keep message channel open for async response
     }
 });
 
-async function handleTextToSpeech(text) {
+async function handleTextToSpeech(text, voiceName, speakingRate) {
     try {
+        let effectiveVoiceName = voiceName || config.voice.name;
+        let effectiveLanguageCode = config.voice.languageCode; // Default
+
+        if (voiceName) {
+            // Extract language code from voice name, e.g., "en-US-Chirp3-HD-Charon" -> "en-US"
+            const parts = voiceName.split('-');
+            if (parts.length >= 2) {
+                effectiveLanguageCode = `${parts[0]}-${parts[1]}`;
+            }
+        }
+
         // Get API key from storage - use browser API for better Firefox compatibility
         let result;
         let apiKey;
@@ -86,13 +98,13 @@ async function handleTextToSpeech(text) {
                 text: text
             },
             voice: {
-                languageCode: config.voice.languageCode,
-                name: config.voice.name
+                languageCode: effectiveLanguageCode,
+                name: effectiveVoiceName
                 // Note: Chirp 3 HD voices don't use ssmlGender parameter
             },
             audio_config: {
                 audio_encoding: config.audio.audioEncoding,
-                speaking_rate: config.audio.speakingRate
+                speaking_rate: speakingRate || config.audio.speakingRate
                 // Note: Chirp 3 HD voices don't support pitch and volumeGainDb parameters
             }
         };

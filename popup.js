@@ -5,10 +5,15 @@ document.addEventListener('DOMContentLoaded', function() {
     const testButton = document.getElementById('testButton');
     const testTextInput = document.getElementById('testText');
     const statusDiv = document.getElementById('status');
-    
-    // Load existing API key
+    const voiceSelect = document.getElementById('voiceSelect');
+    const speedSlider = document.getElementById('speedSlider');
+    const speedValueSpan = document.getElementById('speedValue');
+    const saveSettingsButton = document.getElementById('saveSettingsButton');
+
+    // Load existing API key and settings
     loadApiKey();
-    
+    loadSettings();
+
     // Save API key
     saveButton.addEventListener('click', function() {
         const apiKey = apiKeyInput.value.trim();
@@ -65,10 +70,15 @@ document.addEventListener('DOMContentLoaded', function() {
         testButton.disabled = true;
         testButton.textContent = 'Testing...';
         
+        const selectedVoice = voiceSelect.value;
+        const speechSpeed = parseFloat(speedSlider.value);
+
         // Send test message to background script
         chrome.runtime.sendMessage({
             action: 'readText',
-            text: testText
+            text: testText,
+            voice: selectedVoice,
+            speakingRate: speechSpeed
         }, function(response) {
             testButton.disabled = false;
             testButton.textContent = 'Test Speech';
@@ -105,6 +115,52 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         }).catch((error) => {
             console.error('Error loading API key:', error);
+        });
+    }
+
+    // Load saved settings
+    function loadSettings() {
+        const storageAPI = typeof browser !== 'undefined' ? browser : chrome;
+        
+        storageAPI.storage.sync.get(['selectedVoice', 'speechSpeed'], (result) => {
+            if (result.selectedVoice) {
+                voiceSelect.value = result.selectedVoice;
+            } else {
+                // Set default if not found
+                voiceSelect.value = 'en-US-Chirp3-HD-Charon';
+            }
+
+            if (result.speechSpeed) {
+                speedSlider.value = result.speechSpeed;
+                speedValueSpan.textContent = `${result.speechSpeed}x`;
+            } else {
+                // Set default if not found
+                speedSlider.value = 1.0;
+                speedValueSpan.textContent = '1.0x';
+            }
+        });
+    }
+
+    // Save settings
+    if (saveSettingsButton) {
+        saveSettingsButton.addEventListener('click', function() {
+            const storageAPI = typeof browser !== 'undefined' ? browser : chrome;
+
+            const selectedVoice = voiceSelect.value;
+            const speechSpeed = parseFloat(speedSlider.value);
+
+            storageAPI.storage.sync.set({ selectedVoice: selectedVoice, speechSpeed: speechSpeed }, () => {
+                showStatus('Settings saved successfully!', 'success');
+                // Update the displayed speed value if it changed
+                speedValueSpan.textContent = `${speechSpeed}x`;
+            });
+        });
+    }
+
+    // Update speed value display as slider changes
+    if (speedSlider && speedValueSpan) {
+        speedSlider.addEventListener('input', function() {
+            speedValueSpan.textContent = `${parseFloat(this.value).toFixed(2)}x`;
         });
     }
     
