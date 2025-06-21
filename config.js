@@ -13,7 +13,8 @@ const TTS_CONFIG = {
     // Audio settings
     audio: {
         speakingRate: 1.0,           // Speed: 0.25 to 2.0 (1.0 = normal) - Chirp 3 supports up to 2.0
-        audioEncoding: 'MP3'         // MP3, LINEAR16, OGG_OPUS, ALAW, MULAW, PCM
+        sampleRateHertz: 24000,      // Sample rate in Hertz - 24000 is high quality
+        audioEncoding: 'LINEAR16'         // MP3, LINEAR16, OGG_OPUS, ALAW, MULAW, PCM
     },
     
     // Keyboard shortcut

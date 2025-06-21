@@ -9,6 +9,7 @@ document.addEventListener('DOMContentLoaded', function() {
     const speedSlider = document.getElementById('speedSlider');
     const speedValueSpan = document.getElementById('speedValue');
     const saveSettingsButton = document.getElementById('saveSettingsButton');
+    const sampleRateSelect = document.getElementById('sampleRateSelect');
 
     // Load existing API key and settings
     loadApiKey();
@@ -72,13 +73,15 @@ document.addEventListener('DOMContentLoaded', function() {
         
         const selectedVoice = voiceSelect.value;
         const speechSpeed = parseFloat(speedSlider.value);
+        const sampleRate = parseInt(sampleRateSelect.value, 10);
 
         // Send test message to background script
         chrome.runtime.sendMessage({
             action: 'readText',
             text: testText,
             voice: selectedVoice,
-            speakingRate: speechSpeed
+            speakingRate: speechSpeed,
+            sampleRateHertz: sampleRate
         }, function(response) {
             testButton.disabled = false;
             testButton.textContent = 'Test Speech';
@@ -122,21 +125,25 @@ document.addEventListener('DOMContentLoaded', function() {
     function loadSettings() {
         const storageAPI = typeof browser !== 'undefined' ? browser : chrome;
         
-        storageAPI.storage.sync.get(['selectedVoice', 'speechSpeed'], (result) => {
+        storageAPI.storage.sync.get(['selectedVoice', 'speechSpeed', 'sampleRate'], (result) => {
             if (result.selectedVoice) {
                 voiceSelect.value = result.selectedVoice;
             } else {
-                // Set default if not found
-                voiceSelect.value = 'en-US-Chirp3-HD-Charon';
+                voiceSelect.value = 'en-GB-Chirp3-HD-Charon';
             }
 
             if (result.speechSpeed) {
                 speedSlider.value = result.speechSpeed;
                 speedValueSpan.textContent = `${result.speechSpeed}x`;
             } else {
-                // Set default if not found
                 speedSlider.value = 1.0;
                 speedValueSpan.textContent = '1.0x';
+            }
+
+            if (result.sampleRate) {
+                sampleRateSelect.value = result.sampleRate;
+            } else {
+                sampleRateSelect.value = '24000';
             }
         });
     }
@@ -148,10 +155,14 @@ document.addEventListener('DOMContentLoaded', function() {
 
             const selectedVoice = voiceSelect.value;
             const speechSpeed = parseFloat(speedSlider.value);
+            const sampleRate = parseInt(sampleRateSelect.value, 10);
 
-            storageAPI.storage.sync.set({ selectedVoice: selectedVoice, speechSpeed: speechSpeed }, () => {
+            storageAPI.storage.sync.set({
+                selectedVoice: selectedVoice,
+                speechSpeed: speechSpeed,
+                sampleRate: sampleRate
+            }, () => {
                 showStatus('Settings saved successfully!', 'success');
-                // Update the displayed speed value if it changed
                 speedValueSpan.textContent = `${speechSpeed}x`;
             });
         });

@@ -25,17 +25,24 @@
             if (textToRead) {
                 console.log('Text to read:', textToRead);
                 
-                // Send message to background script
-                chrome.runtime.sendMessage({
-                    action: 'readText',
-                    text: textToRead
-                }, function(response) {
-                    if (response && response.error) {
-                        console.error('TTS Error:', response.error);
-                        showNotification('Error: ' + response.error, 'error');
-                    } else if (response && response.success) {
-                        showNotification('Reading text...', 'success');
-                    }
+                // Get settings from storage before sending the message
+                const storageAPI = typeof browser !== 'undefined' ? browser : chrome;
+                storageAPI.storage.sync.get(['selectedVoice', 'speechSpeed', 'sampleRate'], (settings) => {
+                    // Send message to background script with the retrieved settings
+                    chrome.runtime.sendMessage({
+                        action: 'readText',
+                        text: textToRead,
+                        voice: settings.selectedVoice,
+                        speakingRate: settings.speechSpeed,
+                        sampleRateHertz: settings.sampleRate
+                    }, function(response) {
+                        if (response && response.error) {
+                            console.error('TTS Error:', response.error);
+                            showNotification('Error: ' + response.error, 'error');
+                        } else if (response && response.success) {
+                            showNotification('Reading text...', 'success');
+                        }
+                    });
                 });
             } else {
                 showNotification('No text selected', 'warning');

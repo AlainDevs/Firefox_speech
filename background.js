@@ -31,15 +31,15 @@ try {
 
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     if (request.action === 'readText') {
-        // Pass voice and speakingRate from the popup to the background script
-        handleTextToSpeech(request.text, request.voice, request.speakingRate)
+        // Pass voice, speakingRate, and sampleRateHertz from the popup
+        handleTextToSpeech(request.text, request.voice, request.speakingRate, request.sampleRateHertz)
             .then(result => sendResponse(result))
             .catch(error => sendResponse({error: error.message}));
         return true; // Keep message channel open for async response
     }
 });
 
-async function handleTextToSpeech(text, voiceName, speakingRate) {
+async function handleTextToSpeech(text, voiceName, speakingRate, sampleRateHertz) {
     try {
         let effectiveVoiceName = voiceName || config.voice.name;
         let effectiveLanguageCode = config.voice.languageCode; // Default
@@ -52,39 +52,29 @@ async function handleTextToSpeech(text, voiceName, speakingRate) {
             }
         }
 
-        // Get API key from storage - use browser API for better Firefox compatibility
-        let result;
-        let apiKey;
-        
-        // Try multiple storage methods for Firefox compatibility
-        try {
-            // First try browser.storage.sync (Firefox preferred)
-            if (typeof browser !== 'undefined' && browser.storage && browser.storage.sync) {
-                result = await browser.storage.sync.get(['googleApiKey']);
-                console.log('Browser sync storage result:', result);
-                apiKey = result.googleApiKey;
-            } else {
-                // Fallback to chrome.storage.sync
-                result = await chrome.storage.sync.get(['googleApiKey']);
-                console.log('Chrome sync storage result:', result);
-                apiKey = result && result.googleApiKey;
-            }
-        } catch (syncError) {
-            console.log('Sync storage failed, trying local storage:', syncError);
-            try {
-                if (typeof browser !== 'undefined' && browser.storage && browser.storage.local) {
-                    result = await browser.storage.local.get(['googleApiKey']);
-                    console.log('Browser local storage result:', result);
-                    apiKey = result.googleApiKey;
-                } else {
-                    result = await chrome.storage.local.get(['googleApiKey']);
-                    console.log('Chrome local storage result:', result);
-                    apiKey = result && result.googleApiKey;
-                }
-            } catch (localError) {
-                console.log('Local storage also failed:', localError);
-            }
-        }
+        // Promisified storage access for better compatibility
+        const getStorageData = (key) => {
+            return new Promise((resolve, reject) => {
+                const storageAPI = typeof browser !== 'undefined' ? browser.storage : chrome.storage;
+                storageAPI.sync.get(key, (result) => {
+                    if (chrome.runtime.lastError) {
+                        // Fallback to local storage on error
+                        storageAPI.local.get(key, (localResult) => {
+                            if (chrome.runtime.lastError) {
+                                return reject(chrome.runtime.lastError);
+                            }
+                            resolve(localResult);
+                        });
+                    } else {
+                        resolve(result);
+                    }
+                });
+            });
+        };
+
+        // Get API key from storage
+        const storageData = await getStorageData(['googleApiKey']);
+        const apiKey = storageData.googleApiKey;
         
         console.log('API key retrieved:', apiKey ? 'Found' : 'Not found');
         
@@ -104,8 +94,8 @@ async function handleTextToSpeech(text, voiceName, speakingRate) {
             },
             audio_config: {
                 audio_encoding: config.audio.audioEncoding,
-                speaking_rate: speakingRate || config.audio.speakingRate
-                // Note: Chirp 3 HD voices don't support pitch and volumeGainDb parameters
+                speaking_rate: speakingRate || config.audio.speakingRate,
+                sample_rate_hertz: sampleRateHertz || 24000
             }
         };
         
@@ -123,11 +113,11 @@ async function handleTextToSpeech(text, voiceName, speakingRate) {
             throw new Error(`API Error: ${errorData.error?.message || 'Unknown error'}`);
         }
         
-        const data = await response.json();
+        const responseData = await response.json();
         
-        if (data.audioContent) {
+        if (responseData.audioContent) {
             // Convert base64 audio to blob and play it
-            await playAudio(data.audioContent);
+            await playAudio(responseData.audioContent);
             return {success: true, message: 'Text read successfully'};
         } else {
             throw new Error('No audio content received from API');
