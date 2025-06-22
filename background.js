@@ -16,7 +16,7 @@ try {
             },
             audio: {
                 speakingRate: 1.0,
-                audioEncoding: 'MP3'
+                audioEncoding: 'OGG_OPUS'
                 // Chirp 3 HD voices don't support pitch and volumeGainDb
             },
             api: {
@@ -137,7 +137,7 @@ async function playAudio(base64Audio) {
         for (let i = 0; i < binaryString.length; i++) {
             bytes[i] = binaryString.charCodeAt(i);
         }
-        const audioBlob = new Blob([bytes], {type: 'audio/mp3'});
+        const audioBlob = new Blob([bytes], {type: 'audio/ogg'}); // Correct MIME type for OGG_OPUS
         
         // Create audio element and play
         const audioUrl = URL.createObjectURL(audioBlob);

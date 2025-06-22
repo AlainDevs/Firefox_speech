@@ -2,6 +2,25 @@
 
 A Firefox extension that reads selected text aloud using Google's ultra-realistic Chirp 3 HD voices with a simple keyboard shortcut (Shift + X).
 
+## Table of Contents
+- [Features](#features)
+- [Setup Instructions](#setup-instructions)
+  - [1. Get Google Cloud Text-to-Speech API Key (Chirp 3 HD)](#1-get-google-cloud-text-to-speech-api-key-chirp-3-hd)
+  - [2. Install the Extension](#2-install-the-extension)
+  - [3. Configure the Extension](#3-configure-the-extension)
+- [How to Use](#how-to-use)
+- [Technical Details](#technical-details)
+  - [File Structure](#file-structure)
+  - [Voice Configuration (Chirp 3 HD)](#voice-configuration-chirp-3-hd)
+  - [Permissions Used](#permissions-used)
+- [Troubleshooting](#troubleshooting)
+  - [Common Issues](#common-issues)
+  - [Browser Compatibility](#browser-compatibility)
+- [Security Notes](#security-notes)
+- [Future Enhancements](#future-enhancements)
+- [License](#license)
+- [Support](#support)
+
 ## Features
 
 - 🔊 Read selected text aloud with Shift + X hotkey
@@ -39,11 +58,12 @@ A Firefox extension that reads selected text aloud using Google's ultra-realisti
 5. Select the `manifest.json` file from this project directory
 6. The extension will be loaded temporarily
 
-#### Option B: Package for permanent installation
-1. Zip all the extension files (`manifest.json`, `content.js`, `background.js`, `popup.html`, `popup.js`)
-2. Rename the zip file to have a `.xpi` extension
-3. Open Firefox and drag the `.xpi` file into the browser
-4. Follow the installation prompts
+#### Option B: Package for permanent installation (using `package.bat`)
+1. Run the `package.bat` script (e.g., by double-clicking it or executing `package.bat` from your command line) in the project directory. This will create a `firefox-tts-extension` folder containing all necessary extension files.
+2. Manually zip the *contents* of the newly created `firefox-tts-extension` folder (not the folder itself).
+3. Rename the generated `.zip` file to have a `.xpi` extension (e.g., `firefox-tts-extension.xpi`).
+4. Open Firefox and drag the `.xpi` file into the browser.
+5. Follow the installation prompts to install the extension permanently.
 
 ### 3. Configure the Extension
 
@@ -64,12 +84,13 @@ A Firefox extension that reads selected text aloud using Google's ultra-realisti
 ### File Structure
 ```
 firefox-speech-extension/
-├── manifest.json          # Extension configuration
-├── content.js            # Content script for text selection and hotkeys
-├── background.js         # Background script for API calls
-├── popup.html           # Popup interface HTML
-├── popup.js             # Popup interface logic
-└── README.md            # This file
+├── manifest.json          # Defines the extension's metadata, permissions, and entry points.
+├── content.js            # Injects into web pages to handle text selection and keyboard shortcuts (Shift + X).
+├── background.js         # Runs in the background, handles API calls to Google Cloud Text-to-Speech, and manages audio playback.
+├── popup.html           # The HTML structure for the extension's popup interface.
+├── popup.js             # Contains the JavaScript logic for the popup, handling API key input and testing.
+├── config.js            # Stores configuration settings, such as the default voice and speed.
+└── README.md            # This documentation file.
 ```
 
 ### Voice Configuration (Chirp 3 HD)
@@ -83,6 +104,21 @@ firefox-speech-extension/
 - `activeTab`: Access to current webpage for text selection
 - `storage`: Store API key securely
 - `https://texttospeech.googleapis.com/*`: Access to Google TTS API
+
+## Diagrams
+
+Here's a simple flowchart illustrating the extension's core process:
+
+```mermaid
+graph TD
+    A[User Selects Text] --> B{Presses Shift + X?};
+    B -- Yes --> C[Content Script Sends Text to Background Script];
+    B -- No --> A;
+    C --> D[Background Script Calls Google TTS API];
+    D --> E[Receives Audio Data];
+    E --> F[Plays Audio];
+    F --> G[Notification Appears];
+```
 
 ## Troubleshooting
 
@@ -120,9 +156,8 @@ firefox-speech-extension/
 
 ## Future Enhancements
 
-- Settings page for voice selection (8 Chirp 3 HD voices available)
-- Support for all 31 Chirp 3 HD supported languages
-- Pace control and pause control features
+- Settings page for voice selection (supporting all 8 Chirp 3 HD voices across 31 languages)
+- Pace and pause control features
 - Custom pronunciation support
 - Custom hotkey configuration
 - Audio controls (pause, stop, resume)
