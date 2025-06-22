@@ -22,7 +22,16 @@ echo 2. Click "This Firefox"
 echo 3. Click "Load Temporary Add-on..."
 echo 4. Select manifest.json from the firefox-tts-extension folder
 echo.
-echo Alternatively, you can manually zip the contents of firefox-tts-extension
-echo and rename the .zip file to .xpi for permanent installation.
+echo Zipping extension files into .xpi...
+cd firefox-tts-extension
+zip -r ..\firefox-tts-extension.xpi .
+cd ..
+echo.
+echo Cleaning up temporary directory...
+rmdir /s /q "firefox-tts-extension"
+echo.
+echo Firefox Extension Package created: firefox-tts-extension.xpi
+echo.
+echo For permanent installation, drag and drop firefox-tts-extension.xpi into Firefox.
 echo.
 pause
