@@ -1,7 +1,7 @@
 {
   "manifest_version": 2,
   "name": "Chirp 3 HD Text-to-Speech",
-  "version": "1.0",
+  "version": "1.1",
   "description": "Read selected text aloud using ultra-realistic Google Chirp 3 HD voices with Shift+X hotkey",
   
   "applications": {
