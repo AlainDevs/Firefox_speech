@@ -40,6 +40,16 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
 });
 
 async function handleTextToSpeech(text, voiceName, speakingRate, sampleRateHertz) {
+    // Split text into sentences using a more robust method that handles more cases.
+    const sentences = text.split(/(?<=[.!?:]+)/g).map(s => s.trim()).filter(Boolean);
+
+    for (const sentence of sentences) {
+        // Fetch and play audio for each sentence
+        await fetchAndPlayAudio(sentence, voiceName, speakingRate, sampleRateHertz);
+    }
+}
+
+async function fetchAndPlayAudio(text, voiceName, speakingRate, sampleRateHertz) {
     try {
         let effectiveVoiceName = voiceName || config.voice.name;
         let effectiveLanguageCode = config.voice.languageCode; // Default
@@ -76,8 +86,6 @@ async function handleTextToSpeech(text, voiceName, speakingRate, sampleRateHertz
         const storageData = await getStorageData(['googleApiKey']);
         const apiKey = storageData.googleApiKey;
         
-        console.log('API key retrieved:', apiKey ? 'Found' : 'Not found');
-        
         if (!apiKey) {
             throw new Error('Google API key not configured. Please set it in the extension popup.');
         }
@@ -90,7 +98,6 @@ async function handleTextToSpeech(text, voiceName, speakingRate, sampleRateHertz
             voice: {
                 languageCode: effectiveLanguageCode,
                 name: effectiveVoiceName
-                // Note: Chirp 3 HD voices don't use ssmlGender parameter
             },
             audio_config: {
                 audio_encoding: config.audio.audioEncoding,
@@ -118,7 +125,6 @@ async function handleTextToSpeech(text, voiceName, speakingRate, sampleRateHertz
         if (responseData.audioContent) {
             // Convert base64 audio to blob and play it
             await playAudio(responseData.audioContent);
-            return {success: true, message: 'Text read successfully'};
         } else {
             throw new Error('No audio content received from API');
         }
@@ -129,36 +135,38 @@ async function handleTextToSpeech(text, voiceName, speakingRate, sampleRateHertz
     }
 }
 
-async function playAudio(base64Audio) {
-    try {
-        // Convert base64 to blob
-        const binaryString = atob(base64Audio);
-        const bytes = new Uint8Array(binaryString.length);
-        for (let i = 0; i < binaryString.length; i++) {
-            bytes[i] = binaryString.charCodeAt(i);
-        }
-        const audioBlob = new Blob([bytes], {type: 'audio/ogg'}); // Correct MIME type for OGG_OPUS
-        
-        // Create audio element and play
-        const audioUrl = URL.createObjectURL(audioBlob);
-        const audio = new Audio(audioUrl);
-        
-        return new Promise((resolve, reject) => {
-            audio.onended = () => {
-                URL.revokeObjectURL(audioUrl);
-                resolve();
-            };
-            audio.onerror = () => {
-                URL.revokeObjectURL(audioUrl);
-                reject(new Error('Failed to play audio'));
-            };
-            audio.play().catch(reject);
-        });
-        
-    } catch (error) {
-        console.error('Audio playback error:', error);
-        throw new Error('Failed to play synthesized speech');
+let audioContext;
+let audioQueue = [];
+let isPlaying = false;
+
+function getAudioContext() {
+    if (!audioContext) {
+        audioContext = new (window.AudioContext || window.webkitAudioContext)();
     }
+    return audioContext;
+}
+
+async function playAudio(base64Audio) {
+    const audioData = atob(base64Audio).split('').map(c => c.charCodeAt(0));
+    const audioBuffer = await getAudioContext().decodeAudioData(new Uint8Array(audioData).buffer);
+    audioQueue.push(audioBuffer);
+    if (!isPlaying) {
+        playNextInQueue();
+    }
+}
+
+function playNextInQueue() {
+    if (audioQueue.length === 0) {
+        isPlaying = false;
+        return;
+    }
+    isPlaying = true;
+    const audioBuffer = audioQueue.shift();
+    const source = getAudioContext().createBufferSource();
+    source.buffer = audioBuffer;
+    source.connect(getAudioContext().destination);
+    source.onended = playNextInQueue;
+    source.start();
 }
 
 // Install/update handler
