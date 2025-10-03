@@ -1,5 +1,9 @@
 // Background script for handling Google Text-to-Speech API
 
+// Maximum chunk size for API requests (characters)
+// Google TTS API has a 5000 character limit, but we use a safer limit
+const MAX_CHUNK_SIZE = 4500;
+
 // Load configuration
 let config = {};
 try {
@@ -37,6 +41,70 @@ try {
     console.log('Using default config');
 }
 
+/**
+ * Intelligently chunk text into smaller pieces that fit API limits
+ * Uses multi-tier approach: sentences → clauses → words
+ */
+function intelligentChunk(text) {
+    const chunks = [];
+    
+    // First, try splitting by sentences
+    const sentences = text.split(/(?<=[.!?:]+)/g).map(s => s.trim()).filter(Boolean);
+    
+    for (const sentence of sentences) {
+        if (sentence.length <= MAX_CHUNK_SIZE) {
+            // Sentence fits within limit
+            chunks.push(sentence);
+        } else {
+            // Sentence too long, split by clauses (commas, semicolons)
+            const clauses = sentence.split(/(?<=[,;])\s+/).filter(Boolean);
+            
+            let currentChunk = '';
+            for (const clause of clauses) {
+                if (clause.length > MAX_CHUNK_SIZE) {
+                    // Even a clause is too long, split by word boundaries
+                    if (currentChunk) {
+                        chunks.push(currentChunk.trim());
+                        currentChunk = '';
+                    }
+                    
+                    const words = clause.split(/\s+/);
+                    for (const word of words) {
+                        if ((currentChunk + ' ' + word).length > MAX_CHUNK_SIZE) {
+                            if (currentChunk) {
+                                chunks.push(currentChunk.trim());
+                            }
+                            currentChunk = word;
+                        } else {
+                            currentChunk = currentChunk ? currentChunk + ' ' + word : word;
+                        }
+                    }
+                    if (currentChunk) {
+                        chunks.push(currentChunk.trim());
+                        currentChunk = '';
+                    }
+                } else if ((currentChunk + ' ' + clause).length > MAX_CHUNK_SIZE) {
+                    // Adding this clause would exceed limit
+                    if (currentChunk) {
+                        chunks.push(currentChunk.trim());
+                    }
+                    currentChunk = clause;
+                } else {
+                    // Add clause to current chunk
+                    currentChunk = currentChunk ? currentChunk + ' ' + clause : clause;
+                }
+            }
+            
+            // Add remaining chunk
+            if (currentChunk) {
+                chunks.push(currentChunk.trim());
+            }
+        }
+    }
+    
+    return chunks.filter(chunk => chunk.length > 0);
+}
+
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     if (request.action === 'readText') {
         handleTextToSpeech(request)
@@ -47,18 +115,33 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
 });
 
 async function handleTextToSpeech(request) {
-    // Split text into sentences
-    const sentences = request.text.split(/(?<=[.!?:]+)/g).map(s => s.trim()).filter(Boolean);
-
-    for (const sentence of sentences) {
-        await fetchAndPlayAudio(sentence, request);
+    try {
+        // Use intelligent chunking to split text into API-friendly sizes
+        const chunks = intelligentChunk(request.text);
+        
+        console.log(`Processing ${chunks.length} chunks from ${request.text.length} characters`);
+        
+        // Process each chunk sequentially
+        for (let i = 0; i < chunks.length; i++) {
+            const chunk = chunks[i];
+            console.log(`Processing chunk ${i + 1}/${chunks.length} (${chunk.length} chars)`);
+            await fetchAndPlayAudio(chunk, request);
+        }
+        
+        return { success: true };
+    } catch (error) {
+        console.error('Text-to-Speech handling error:', error);
+        throw error;
     }
-    
-    return { success: true };
 }
 
 async function fetchAndPlayAudio(text, request) {
     try {
+        // Validate chunk size
+        if (text.length > MAX_CHUNK_SIZE) {
+            console.warn(`Warning: Chunk size ${text.length} exceeds recommended limit ${MAX_CHUNK_SIZE}`);
+        }
+        
         // Get API key from storage
         const storageData = await getStorageData(['googleApiKey']);
         const apiKey = storageData.googleApiKey;
@@ -77,6 +160,8 @@ async function fetchAndPlayAudio(text, request) {
             requestBody = buildChirp3Request(text, request);
         }
         
+        console.log(`Sending ${text.length} chars to ${engine} API`);
+        
         // Make API call to Google Text-to-Speech
         const response = await fetch(`https://texttospeech.googleapis.com/v1/text:synthesize?key=${apiKey}`, {
             method: 'POST',
@@ -88,7 +173,10 @@ async function fetchAndPlayAudio(text, request) {
         
         if (!response.ok) {
             const errorData = await response.json();
-            throw new Error(`API Error: ${errorData.error?.message || 'Unknown error'}`);
+            const errorMsg = errorData.error?.message || 'Unknown error';
+            console.error(`API Error (${response.status}):`, errorMsg);
+            console.error('Failed text chunk:', text.substring(0, 100) + '...');
+            throw new Error(`API Error: ${errorMsg}`);
         }
         
         const responseData = await response.json();
@@ -101,6 +189,11 @@ async function fetchAndPlayAudio(text, request) {
         
     } catch (error) {
         console.error('Text-to-Speech Error:', error);
+        console.error('Error details:', {
+            textLength: text.length,
+            engine: request.engine,
+            errorMessage: error.message
+        });
         throw error;
     }
 }
@@ -180,35 +273,119 @@ function getStorageData(keys) {
 let audioContext;
 let audioQueue = [];
 let isPlaying = false;
+let currentSource = null;
+let playbackTimeout = null;
 
 function getAudioContext() {
     if (!audioContext) {
         audioContext = new (window.AudioContext || window.webkitAudioContext)();
     }
+    // Resume context if suspended (important for Firefox)
+    if (audioContext.state === 'suspended') {
+        console.log('Resuming suspended AudioContext...');
+        audioContext.resume();
+    }
     return audioContext;
 }
 
 async function playAudio(base64Audio) {
-    const audioData = atob(base64Audio).split('').map(c => c.charCodeAt(0));
-    const audioBuffer = await getAudioContext().decodeAudioData(new Uint8Array(audioData).buffer);
-    audioQueue.push(audioBuffer);
-    if (!isPlaying) {
-        playNextInQueue();
+    try {
+        console.log('Decoding audio chunk...');
+        const audioData = atob(base64Audio).split('').map(c => c.charCodeAt(0));
+        const audioBuffer = await getAudioContext().decodeAudioData(new Uint8Array(audioData).buffer);
+        console.log(`Audio decoded successfully, duration: ${audioBuffer.duration.toFixed(2)}s`);
+        audioQueue.push(audioBuffer);
+        if (!isPlaying) {
+            playNextInQueue();
+        }
+    } catch (error) {
+        console.error('Audio decoding error:', error);
+        throw error;
     }
 }
 
 function playNextInQueue() {
+    // Clear any existing timeout
+    if (playbackTimeout) {
+        clearTimeout(playbackTimeout);
+        playbackTimeout = null;
+    }
+    
     if (audioQueue.length === 0) {
         isPlaying = false;
+        currentSource = null;
+        console.log('Audio queue finished');
         return;
     }
+    
     isPlaying = true;
     const audioBuffer = audioQueue.shift();
-    const source = getAudioContext().createBufferSource();
-    source.buffer = audioBuffer;
-    source.connect(getAudioContext().destination);
-    source.onended = playNextInQueue;
-    source.start();
+    const duration = audioBuffer.duration;
+    console.log(`Playing audio chunk (${duration.toFixed(2)}s), ${audioQueue.length} remaining in queue`);
+    
+    // Ensure AudioContext is running
+    const ctx = getAudioContext();
+    if (ctx.state === 'suspended') {
+        ctx.resume().then(() => {
+            console.log('AudioContext resumed, starting playback...');
+            startAudioSource(audioBuffer, duration);
+        }).catch(error => {
+            console.error('Failed to resume AudioContext:', error);
+            playNextInQueue(); // Try next chunk
+        });
+    } else {
+        startAudioSource(audioBuffer, duration);
+    }
+}
+
+function startAudioSource(audioBuffer, duration) {
+    try {
+        const ctx = getAudioContext();
+        const source = ctx.createBufferSource();
+        source.buffer = audioBuffer;
+        source.connect(ctx.destination);
+        
+        // Store reference to prevent garbage collection
+        currentSource = source;
+        
+        source.onended = () => {
+            console.log('Audio chunk finished playing normally');
+            if (playbackTimeout) {
+                clearTimeout(playbackTimeout);
+                playbackTimeout = null;
+            }
+            currentSource = null;
+            playNextInQueue();
+        };
+        
+        // Safety timeout in case onended doesn't fire
+        // Add 1 second buffer to the expected duration
+        playbackTimeout = setTimeout(() => {
+            console.warn('Audio playback timeout - forcing next chunk');
+            if (currentSource) {
+                try {
+                    currentSource.stop();
+                } catch (e) {
+                    // Ignore if already stopped
+                }
+                currentSource = null;
+            }
+            playbackTimeout = null;
+            playNextInQueue();
+        }, (duration + 1) * 1000);
+        
+        source.start(0);
+        console.log('Audio source started successfully');
+        
+    } catch (error) {
+        console.error('Error starting audio playback:', error);
+        currentSource = null;
+        if (playbackTimeout) {
+            clearTimeout(playbackTimeout);
+            playbackTimeout = null;
+        }
+        playNextInQueue(); // Try next chunk
+    }
 }
 
 // Install/update handler

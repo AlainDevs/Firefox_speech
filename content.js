@@ -24,6 +24,7 @@
             
             if (textToRead) {
                 console.log('Text to read:', textToRead);
+                console.log('Text length:', textToRead.length, 'characters');
                 
                 // Get settings from storage before sending the message
                 const storageAPI = typeof browser !== 'undefined' ? browser : chrome;
@@ -33,6 +34,8 @@
                     'geminiModel', 'geminiVoice', 'geminiPrompt', 'geminiSpeed'
                 ], (settings) => {
                     const engine = settings.ttsEngine || 'chirp3';
+                    
+                    console.log('Using TTS engine:', engine);
                     
                     // Build message based on engine
                     const message = {
@@ -52,13 +55,18 @@
                         message.sampleRateHertz = settings.chirp3SampleRate || 24000;
                     }
                     
+                    console.log('Sending message to background script...');
+                    
                     // Send message to background script
                     chrome.runtime.sendMessage(message, function(response) {
                         if (response && response.error) {
                             console.error('TTS Error:', response.error);
                             showNotification('Error: ' + response.error, 'error');
                         } else if (response && response.success) {
+                            console.log('TTS processing started successfully');
                             showNotification('Reading text...', 'success');
+                        } else {
+                            console.warn('Unexpected response from background script:', response);
                         }
                     });
                 });
