@@ -1,17 +1,19 @@
-# Firefox Chirp 3 HD Text-to-Speech Extension
+# Google Text-to-Speech Extension: Chirp 3 HD & Gemini-TTS
 
-A Firefox extension that reads selected text aloud using Google's ultra-realistic Chirp 3 HD voices with a simple keyboard shortcut (Shift + X).
+A Firefox extension that reads selected text aloud using Google's advanced TTS engines with a simple keyboard shortcut (Shift + X). Choose between ultra-realistic Chirp 3 HD voices or the new Gemini-TTS with advanced style control.
 
 ## Table of Contents
 - [Features](#features)
 - [Setup Instructions](#setup-instructions)
-  - [1. Get Google Cloud Text-to-Speech API Key (Chirp 3 HD)](#1-get-google-cloud-text-to-speech-api-key-chirp-3-hd)
+  - [1. Get Google Cloud Text-to-Speech API Key](#1-get-google-cloud-text-to-speech-api-key)
   - [2. Install the Extension](#2-install-the-extension)
   - [3. Configure the Extension](#3-configure-the-extension)
 - [How to Use](#how-to-use)
+- [TTS Engines](#tts-engines)
+  - [Chirp 3 HD](#chirp-3-hd)
+  - [Gemini-TTS](#gemini-tts)
 - [Technical Details](#technical-details)
   - [File Structure](#file-structure)
-  - [Voice Configuration (Chirp 3 HD)](#voice-configuration-chirp-3-hd)
   - [Permissions Used](#permissions-used)
 - [Troubleshooting](#troubleshooting)
   - [Common Issues](#common-issues)
@@ -24,16 +26,18 @@ A Firefox extension that reads selected text aloud using Google's ultra-realisti
 ## Features
 
 - 🔊 Read selected text aloud with Shift + X hotkey
-- 🇬🇧 Ultra-realistic UK English voice (Chirp 3 HD - Charon)
-- ⚡ Speed control (0.25x to 2.0x, currently set to normal: 1.0)
+- 🎭 **Dual TTS Engines**: Choose between Chirp 3 HD or Gemini-TTS
+- 🎯 **Gemini-TTS**: Advanced style control with text prompts
+- 🗣️ **30+ Voices**: Wide selection of male and female voices
+- ⚡ Speed control (0.25x to 2.0x)
 - 🔐 Secure API key storage
-- 📱 Simple popup interface for configuration
+- 📱 Tab-based interface for easy engine switching
 - 🌐 Works on all websites
-- 🎭 Powered by Google's most advanced AI voices
+- 🎨 Control tone, emotion, and speaking style with prompts (Gemini-TTS)
 
 ## Setup Instructions
 
-### 1. Get Google Cloud Text-to-Speech API Key (Chirp 3 HD)
+### 1. Get Google Cloud Text-to-Speech API Key
 
 1. Go to [Google Cloud Console](https://console.cloud.google.com/)
 2. Create a new project or select an existing one
@@ -41,7 +45,7 @@ A Firefox extension that reads selected text aloud using Google's ultra-realisti
    - Navigate to "APIs & Services" > "Library"
    - Search for "Cloud Text-to-Speech API"
    - Click on it and press "Enable"
-   - **Important**: Ensure your project has access to Chirp 3 HD voices (available in global, us, eu, asia-southeast1 regions)
+   - **Note**: Both Chirp 3 HD and Gemini-TTS are available in supported regions
 4. Create an API key:
    - Go to "APIs & Services" > "Credentials"
    - Click "Create Credentials" > "API Key"
@@ -73,6 +77,63 @@ A Firefox extension that reads selected text aloud using Google's ultra-realisti
 4. Test the functionality using the test section in the popup
 
 ## How to Use
+## TTS Engines
+
+This extension supports two powerful Google TTS engines. You can switch between them using the tab interface in the extension popup.
+
+### Chirp 3 HD
+
+**Overview**: Ultra-realistic AI voices with natural-sounding speech synthesis.
+
+**Features**:
+- High-definition voice quality
+- 4 UK English voices available
+- Sample rate up to 48000 Hz
+- Speed control (0.25x - 2.0x)
+
+**Available Voices**:
+- Charon (Male)
+- Kore (Female)
+- Leda (Female)
+- Puck (Male)
+
+**Best for**: General text-to-speech needs, audiobooks, content reading
+
+### Gemini-TTS
+
+**Overview**: The latest evolution of Google's TTS technology with granular control over generated audio using text-based prompts.
+
+**Features**:
+- **Style Control**: Use natural language prompts to control tone, emotion, and delivery
+- **30 Voice Options**: Wide selection of distinct male and female voices
+- **Two Models**:
+  - **Flash** (`gemini-2.5-flash-preview-tts`): Fast and cost-efficient for everyday applications
+  - **Pro** (`gemini-2.5-pro-preview-tts`): High quality for complex prompts and professional use
+- **Dynamic Performance**: Can express emotions, accents, and specific tones
+- **Enhanced Control**: Adjust pace, pronunciation, and speaking style via prompts
+
+**Available Voices**:
+
+*Female Voices*: Achernar, Aoede, Autonoe, Callirrhoe, Despina, Erinome, Gacrux, Kore, Laomedeia, Leda, Pulcherrima, Sulafat, Vindemiatrix, Zephyr
+
+*Male Voices*: Achird, Algenib, Algieba, Alnilam, Charon, Enceladus, Fenrir, Iapetus, Orus, Puck, Rasalgethi, Sadachbia, Sadaltager, Schedar, Umbriel, Zubenelgenubi
+
+**Prompt Examples**:
+- `"Say this in a friendly and casual way"`
+- `"Read this like a news anchor"`
+- `"Say this with excitement and enthusiasm"`
+- `"Speak in a calm, professional tone"`
+- `"Say this very fast but still be intelligible"`
+
+**Best for**: 
+- Conversational applications
+- Content requiring specific emotional tone
+- Podcasts and storytelling
+- Customer support scenarios
+- Creative voice applications
+
+**Supported Languages**: 80+ locales including English (US, UK, AU, IN), Spanish, French, German, Japanese, Korean, and many more.
+
 
 1. **Select text** on any webpage by highlighting it with your mouse
 2. **Press Shift + X** while the text is selected
@@ -93,12 +154,24 @@ firefox-speech-extension/
 └── README.md            # This documentation file.
 ```
 
-### Voice Configuration (Chirp 3 HD)
-- **Language**: English (UK) - `en-GB`
-- **Voice**: `en-GB-Chirp3-HD-Charon` (Ultra-realistic Male UK voice)
-- **Speed**: 1.0 (normal speed, adjustable 0.25x to 2.0x)
-- **Audio Format**: MP3
-- **Technology**: Powered by Google's latest LLM-based speech synthesis
+### Engine Configuration
+
+The extension supports two TTS engines that can be switched via the tab interface:
+
+**Chirp 3 HD (Default)**:
+- Language: English (UK) - `en-GB`
+- Default Voice: Charon (Male)
+- Speed: 0.25x to 2.0x (default: 1.0x)
+- Audio Format: OGG_OPUS
+- Sample Rate: 24000 Hz or 48000 Hz
+
+**Gemini-TTS**:
+- Language: Multiple (80+ locales, default: en-US)
+- Default Voice: Kore (Female)
+- Models: Flash (fast) or Pro (high quality)
+- Speed: 0.25x to 2.0x (default: 1.0x)
+- Audio Format: LINEAR16
+- Prompt Support: Optional style instructions
 
 ### Permissions Used
 - `activeTab`: Access to current webpage for text selection
@@ -136,12 +209,19 @@ graph TD
    - Check that your Google Cloud project has Text-to-Speech API enabled
    - Verify your API key is correct and not expired
    - Ensure you have quota/credits available in your Google Cloud account
-   - **Important**: Verify your project has access to Chirp 3 HD voices in supported regions
+   - Verify your project has access to the selected TTS engine (Chirp 3 HD or Gemini-TTS)
+   - Try switching between engines to see if one works better
 
 4. **No audio playback**
    - Check your browser's audio settings
    - Make sure the website allows audio playback (some sites block autoplay)
-   - Try testing with the built-in test function in the popup
+   - Try testing with the built-in test function in the popup for both engines
+   - Switch between Chirp 3 HD and Gemini-TTS tabs to test different engines
+
+5. **Gemini-TTS specific issues**
+   - If prompts aren't working as expected, try simplifying your prompt
+   - Ensure prompt length is reasonable (under 900 bytes)
+   - Try different voices to find one that works best with your prompt style
 
 ### Browser Compatibility
 - Designed for Firefox (manifest v2)
@@ -156,12 +236,15 @@ graph TD
 
 ## Future Enhancements
 
-- Settings page for voice selection (supporting all 8 Chirp 3 HD voices across 31 languages)
-- Pace and pause control features
+- ✅ **Completed**: Dual engine support (Chirp 3 HD + Gemini-TTS)
+- ✅ **Completed**: Multiple voice options (30+ voices)
+- ✅ **Completed**: Style control via prompts (Gemini-TTS)
+- Multi-speaker dialogue support (Gemini-TTS advanced feature)
 - Custom pronunciation support
 - Custom hotkey configuration
 - Audio controls (pause, stop, resume)
 - Streaming synthesis for longer texts
+- Language auto-detection
 
 ## License
 

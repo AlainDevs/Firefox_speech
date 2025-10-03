@@ -27,15 +27,33 @@
                 
                 // Get settings from storage before sending the message
                 const storageAPI = typeof browser !== 'undefined' ? browser : chrome;
-                storageAPI.storage.sync.get(['selectedVoice', 'speechSpeed', 'sampleRate'], (settings) => {
-                    // Send message to background script with the retrieved settings
-                    chrome.runtime.sendMessage({
+                storageAPI.storage.sync.get([
+                    'ttsEngine',
+                    'chirp3Voice', 'chirp3Speed', 'chirp3SampleRate',
+                    'geminiModel', 'geminiVoice', 'geminiPrompt', 'geminiSpeed'
+                ], (settings) => {
+                    const engine = settings.ttsEngine || 'chirp3';
+                    
+                    // Build message based on engine
+                    const message = {
                         action: 'readText',
                         text: textToRead,
-                        voice: settings.selectedVoice,
-                        speakingRate: settings.speechSpeed,
-                        sampleRateHertz: settings.sampleRate
-                    }, function(response) {
+                        engine: engine
+                    };
+                    
+                    if (engine === 'gemini-tts') {
+                        message.model = settings.geminiModel || 'gemini-2.5-flash-tts';
+                        message.voice = settings.geminiVoice || 'Kore';
+                        message.prompt = settings.geminiPrompt || '';
+                        message.speakingRate = settings.geminiSpeed || 1.0;
+                    } else {
+                        message.voice = settings.chirp3Voice || 'en-GB-Chirp3-HD-Charon';
+                        message.speakingRate = settings.chirp3Speed || 1.0;
+                        message.sampleRateHertz = settings.chirp3SampleRate || 24000;
+                    }
+                    
+                    // Send message to background script
+                    chrome.runtime.sendMessage(message, function(response) {
                         if (response && response.error) {
                             console.error('TTS Error:', response.error);
                             showNotification('Error: ' + response.error, 'error');

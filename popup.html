@@ -111,22 +111,118 @@
         .test-button:hover {
             background-color: #0056b3;
         }
+        
+        /* Tab styles */
+        .tab-container {
+            display: flex;
+            border-bottom: 2px solid #ddd;
+            margin-bottom: 20px;
+        }
+        
+        .tab-button {
+            flex: 1;
+            padding: 12px 20px;
+            background-color: #f8f9fa;
+            border: none;
+            border-bottom: 3px solid transparent;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: bold;
+            color: #555;
+            transition: all 0.3s ease;
+        }
+        
+        .tab-button:hover {
+            background-color: #e9ecef;
+        }
+        
+        .tab-button.active {
+            background-color: white;
+            color: #007bff;
+            border-bottom-color: #007bff;
+        }
+        
+        .tab-content {
+            display: none;
+        }
+        
+        .tab-content.active {
+            display: block;
+        }
+        
+        label {
+            display: block;
+            margin-top: 10px;
+            margin-bottom: 5px;
+            font-weight: bold;
+            font-size: 13px;
+            color: #555;
+        }
+        
+        select, textarea {
+            width: 100%;
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            box-sizing: border-box;
+            font-size: 14px;
+            font-family: Arial, sans-serif;
+        }
+        
+        textarea {
+            resize: vertical;
+            min-height: 60px;
+        }
+        
+        .model-selector {
+            display: flex;
+            gap: 10px;
+            margin-top: 5px;
+        }
+        
+        .model-option {
+            flex: 1;
+            padding: 8px;
+            border: 2px solid #ddd;
+            border-radius: 4px;
+            text-align: center;
+            cursor: pointer;
+            font-size: 13px;
+            background-color: white;
+            transition: all 0.2s ease;
+        }
+        
+        .model-option:hover {
+            border-color: #007bff;
+        }
+        
+        .model-option.selected {
+            background-color: #007bff;
+            color: white;
+            border-color: #007bff;
+        }
+        
+        .prompt-hint {
+            font-size: 11px;
+            color: #888;
+            margin-top: 3px;
+            font-style: italic;
+        }
     </style>
 </head>
 <body>
     <div class="header">
-        <h2>🔊 Chirp 3 HD Text-to-Speech</h2>
+        <h2>🔊 Google Text-to-Speech</h2>
     </div>
     
     <div class="instructions">
         <strong>How to use:</strong>
         <ol>
-            <li>Get a Google Cloud Text-to-Speech API key (Chirp 3 HD enabled)</li>
+            <li>Get a Google Cloud Text-to-Speech API key</li>
             <li>Enter the API key below and save</li>
             <li>Select any text on a webpage</li>
-            <li>Press <strong>Shift + X</strong> to hear ultra-realistic speech!</li>
+            <li>Press <strong>Shift + X</strong> to hear it!</li>
         </ol>
-        <small><strong>Voice:</strong> UK English Chirp 3 HD (Charon) - Ultra-realistic AI voice</small>
     </div>
     
     <div class="section">
@@ -136,33 +232,81 @@
         <div id="status" class="status" style="display: none;"></div>
     </div>
     
-<div class="section">
-        <h3>Voice and Speed Settings</h3>
-        
-        <label for="voiceSelect">Voice:</label>
-        <select id="voiceSelect">
-            <option value="en-GB-Chirp3-HD-Charon">Charon (Male)</option>
-            <option value="en-GB-Chirp3-HD-Kore">Kore (Female)</option>
-            <option value="en-GB-Chirp3-HD-Leda">Leda (Female)</option>
-            <option value="en-GB-Chirp3-HD-Puck">Puck (Male)</option>
-        </select>
-        
-        <label for="speedSlider">Speech Speed:</label>
-        <input type="range" id="speedSlider" min="0.25" max="2.0" step="0.05" value="1.0">
-        <span id="speedValue">1.0x</span>
-        
-        <label for="sampleRateSelect">Sample Rate:</label>
-        <select id="sampleRateSelect">
-            <option value="24000">24000 (High Quality)</option>
-            <option value="48000">48000 (Highest Quality)</option>
-        </select>
-        
-        <button id="saveSettingsButton">Save Settings</button>
+    <!-- TTS Engine Tabs -->
+    <div class="tab-container">
+        <button class="tab-button active" data-tab="chirp3">Chirp 3 HD</button>
+        <button class="tab-button" data-tab="gemini">Gemini-TTS</button>
     </div>
-    <div class="test-section">
-        <h3>Test Chirp 3 HD Voice</h3>
-        <input type="text" id="testText" placeholder="Enter text to test" value="Hello there! I'm Charon, your ultra-realistic Chirp 3 HD voice assistant.">
-        <button id="testButton" class="test-button">Test Chirp 3 HD</button>
+    
+    <!-- Chirp 3 HD Tab -->
+    <div id="chirp3-tab" class="tab-content active">
+        <div class="section">
+            <h3>Chirp 3 HD Settings</h3>
+            
+            <label for="chirp3VoiceSelect">Voice:</label>
+            <select id="chirp3VoiceSelect">
+                <option value="en-GB-Chirp3-HD-Charon">Charon (Male)</option>
+                <option value="en-GB-Chirp3-HD-Kore">Kore (Female)</option>
+                <option value="en-GB-Chirp3-HD-Leda">Leda (Female)</option>
+                <option value="en-GB-Chirp3-HD-Puck">Puck (Male)</option>
+            </select>
+            
+            <label for="chirp3SpeedSlider">Speech Speed:</label>
+            <input type="range" id="chirp3SpeedSlider" min="0.25" max="2.0" step="0.05" value="1.0">
+            <span id="chirp3SpeedValue">1.0x</span>
+            
+            <label for="chirp3SampleRateSelect">Sample Rate:</label>
+            <select id="chirp3SampleRateSelect">
+                <option value="24000">24000 Hz (High Quality)</option>
+                <option value="48000">48000 Hz (Highest Quality)</option>
+            </select>
+            
+            <button id="saveChirp3Settings">Save Chirp 3 Settings</button>
+        </div>
+        
+        <div class="test-section">
+            <h3>Test Chirp 3 HD</h3>
+            <input type="text" id="chirp3TestText" placeholder="Enter text to test" value="Hello! This is the Chirp 3 HD ultra-realistic voice.">
+            <button id="chirp3TestButton" class="test-button">Test Chirp 3 HD</button>
+        </div>
+    </div>
+    
+    <!-- Gemini-TTS Tab -->
+    <div id="gemini-tab" class="tab-content">
+        <div class="section">
+            <h3>Gemini-TTS Settings</h3>
+            
+            <label for="geminiModelSelect">Model:</label>
+            <div class="model-selector">
+                <div class="model-option selected" data-model="gemini-2.5-flash-preview-tts">
+                    ⚡ Flash<br><small>Fast & Cost-efficient</small>
+                </div>
+                <div class="model-option" data-model="gemini-2.5-pro-preview-tts">
+                    🎯 Pro<br><small>High Quality</small>
+                </div>
+            </div>
+            
+            <label for="geminiVoiceSelect">Voice:</label>
+            <select id="geminiVoiceSelect">
+                <!-- Will be populated by JavaScript -->
+            </select>
+            
+            <label for="geminiPrompt">Style Prompt (Optional):</label>
+            <textarea id="geminiPrompt" placeholder="e.g., 'Say this in a friendly and casual way' or 'Read this like a news anchor'"></textarea>
+            <div class="prompt-hint">Prompt helps control tone, emotion, and speaking style</div>
+            
+            <label for="geminiSpeedSlider">Speech Speed:</label>
+            <input type="range" id="geminiSpeedSlider" min="0.25" max="2.0" step="0.05" value="1.0">
+            <span id="geminiSpeedValue">1.0x</span>
+            
+            <button id="saveGeminiSettings">Save Gemini Settings</button>
+        </div>
+        
+        <div class="test-section">
+            <h3>Test Gemini-TTS</h3>
+            <input type="text" id="geminiTestText" placeholder="Enter text to test" value="Hello! This is Gemini-TTS with advanced style control.">
+            <button id="geminiTestButton" class="test-button">Test Gemini-TTS</button>
+        </div>
     </div>
 
     <script src="popup.js"></script>
